@@ -6,12 +6,20 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
+const cors = require('cors'); // CORS 패키지 가져오기
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 const upload = multer({ dest: 'uploads/' });
+
+// CORS 설정 추가
+app.use(cors({
+  origin: 'https://smarcleforyou2.netlify.app', // 허용할 출처
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // 허용할 HTTP 메서드
+  allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 요청 헤더
+}));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());

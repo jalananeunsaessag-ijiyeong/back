@@ -16,6 +16,8 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+const apiGatewayUrl = process.env.API_GATEWAY_URL || 'http://localhost:8080';
+
 app.post('/recognize', upload.single('audio'), async (req, res) => {
   const invokeUrl = process.env.CLOVA_SPEECH_INVOKE_URL;
   const secret = process.env.CLOVA_SPEECH_SECRET_KEY;
@@ -25,8 +27,6 @@ app.post('/recognize', upload.single('audio'), async (req, res) => {
   }
 
   const audioPath = req.file.path;
-  console.log(`Audio file path: ${audioPath}`);
-
   const formData = new FormData();
   formData.append('media', fs.createReadStream(audioPath));
   formData.append('params', JSON.stringify({
@@ -35,27 +35,21 @@ app.post('/recognize', upload.single('audio'), async (req, res) => {
   }));
 
   try {
-    console.log('Sending request to Clova Speech API...');
-    const response = await axios.post(`${invokeUrl}/recognizer/upload`, formData, {
+    const response = await axios.post(`${apiGatewayUrl}/recognize`, formData, {
       headers: {
         ...formData.getHeaders(),
         'X-CLOVASPEECH-API-KEY': secret,
       }
     });
-    console.log('Clova Speech API response:', response.data);
     res.json({ text: response.data.text });
   } catch (error) {
     console.error('Clova Speech API 오류:', error.response ? error.response.data : error.message);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      console.error('Response headers:', error.response.headers);
-    }
     res.status(500).json({ error: '음성을 인식하는 도중 오류가 발생했습니다.' });
   } finally {
-    fs.unlinkSync(audioPath); // 파일 삭제
+    fs.unlinkSync(audioPath);
   }
 });
+
 
 const askOpenAI = async (query) => {
   try {
